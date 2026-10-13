@@ -150,12 +150,14 @@ form {
     border-radius: 5px;
     display: flex;
     flex-direction: column;
-    gap: 10px; /* Space between form elements */
+    gap: 10px;
+    /* Space between form elements */
 }
 
 #video-upload-forms {
     display: flex;
-    gap: 20px; /* Space between the two forms */
+    gap: 20px;
+    /* Space between the two forms */
 }
 
 #thumbnail-upload-form,
