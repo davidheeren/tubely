@@ -1,7 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 
 	"github.com/davidheeren/tubely/internal/auth"
@@ -28,9 +31,50 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	fmt.Println("uploading thumbnail for video", videoID, "by user", userID)
+	const maxMemory = 10 << 20 // 10 MB
+	err = r.ParseMultipartForm(maxMemory)
 
-	// TODO: implement the upload here
+	file, header, err := r.FormFile("thumbnail")
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Unable to parse form file", err)
+		return
+	}
+	defer file.Close()
 
-	respondWithJSON(w, http.StatusOK, struct{}{})
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		respondWithError(w, http.StatusBadRequest, "Unable to determine thumbnail content type", errors.New("Content-Type not in header"))
+		return
+	}
+
+	imageBytes, err := io.ReadAll(file)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to read thumbnail data", err)
+		return
+	}
+
+	video, err := cfg.db.GetVideo(videoID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID", err)
+		return
+	}
+	if userID != video.UserID {
+		respondWithError(w, http.StatusUnauthorized, "Unable to access video", errors.New("User does not have access to video"))
+		return
+	}
+
+	videoThumbnails[videoID] = thumbnail{
+		data:      imageBytes,
+		mediaType: contentType,
+	}
+
+	thumbnailUrl := fmt.Sprintf("http://localhost:%v/api/thumbnails/%v", cfg.port, videoID)
+	video.ThumbnailURL = &thumbnailUrl
+	err = cfg.db.UpdateVideo(video)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to access video", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, video)
 }
