@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
+	"github.com/davidheeren/tubely/internal/auth"
 	"github.com/google/uuid"
 )
 

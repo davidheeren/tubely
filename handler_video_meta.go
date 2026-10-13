@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
-	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/database"
+	"github.com/davidheeren/tubely/internal/auth"
+	"github.com/davidheeren/tubely/internal/database"
 	"github.com/google/uuid"
 )
 
