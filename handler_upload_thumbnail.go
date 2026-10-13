@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/davidheeren/tubely/internal/auth"
 	"github.com/google/uuid"
@@ -60,7 +59,16 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	mediaType := strings.TrimSpace(strings.Split(contentType, ";")[0])
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to parse media type", err)
+		return
+	}
+	if mediaType != "image/jpeg" && mediaType != "image/png" {
+		respondWithError(w, http.StatusBadRequest, "Thumbnail is not a valid image type", errors.New("Thumbnail is not a valid image type"))
+		return
+	}
+
 	extensions, err := mime.ExtensionsByType(mediaType)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Unable to get thumbnail exension type", err)
