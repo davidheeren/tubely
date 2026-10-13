@@ -1,11 +1,14 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/davidheeren/tubely/internal/auth"
 	"github.com/google/uuid"
@@ -47,12 +50,6 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	imageBytes, err := io.ReadAll(file)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Unable to read thumbnail data", err)
-		return
-	}
-
 	video, err := cfg.db.GetVideo(videoID)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid ID", err)
@@ -63,8 +60,30 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	thumbnailBase64 := base64.StdEncoding.EncodeToString(imageBytes)
-	thumbnailUrl := fmt.Sprintf("data:%v;base64,%v", contentType, thumbnailBase64)
+	mediaType := strings.TrimSpace(strings.Split(contentType, ";")[0])
+	extensions, err := mime.ExtensionsByType(mediaType)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to get thumbnail exension type", err)
+		return
+	}
+	if len(extensions) == 0 {
+		respondWithError(w, http.StatusInternalServerError, "Unable to get thumbnail exension type", errors.New("mime extensions length is 0"))
+		return
+	}
+
+	outputPath := filepath.Join("assets", videoID.String()+extensions[0])
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to save thumbnail", err)
+		return
+	}
+	_, err = io.Copy(outputFile, file)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to save thumbnail", err)
+		return
+	}
+
+	thumbnailUrl := fmt.Sprintf("http://localhost:%v/assets/%v%v", cfg.port, videoID.String(), extensions[0])
 	video.ThumbnailURL = &thumbnailUrl
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
