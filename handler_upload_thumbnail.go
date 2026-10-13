@@ -91,6 +91,8 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "Unable to save thumbnail", err)
 		return
 	}
+	defer outputFile.Close()
+
 	_, err = io.Copy(outputFile, file)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Unable to save thumbnail", err)
