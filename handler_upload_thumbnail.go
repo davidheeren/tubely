@@ -63,7 +63,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Unable to parse media type", err)
+		respondWithError(w, http.StatusBadRequest, "Unable to parse media type", err)
 		return
 	}
 	if mediaType != "image/jpeg" && mediaType != "image/png" {

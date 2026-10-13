@@ -63,7 +63,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Unable to parse media type", err)
+		respondWithError(w, http.StatusBadRequest, "Unable to parse media type", err)
 		return
 	}
 	if mediaType != "video/mp4" {
