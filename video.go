@@ -36,13 +36,23 @@ func getVideoAspectRatio(path string) (string, error) {
 	width := size.Streams[0].Width
 	height := size.Streams[0].Height
 
-	if (width * 9) / (height * 16) == 1 {
+	if (width*9)/(height*16) == 1 {
 		return "16:9", nil
 	}
 
-	if (width * 16) / (height * 9) == 1 {
+	if (width*16)/(height*9) == 1 {
 		return "9:16", nil
 	}
 
 	return "other", nil
+}
+
+func processVideoForFastStart(path string) (string, error) {
+	outPath := path + ".processing"
+	cmd := exec.Command("ffmpeg", "-i", path, "-movflags", "faststart", "-f", "mp4", outPath)
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return outPath, nil
 }

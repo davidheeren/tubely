@@ -91,7 +91,21 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	aspectRatio, err := getVideoAspectRatio(uploadFile.Name())
+	fastUploadFilePath, err := processVideoForFastStart(uploadFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to upload video", err)
+		return
+	}
+	defer os.Remove(fastUploadFilePath)
+
+	fastUploadFile, err := os.Open(fastUploadFilePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to upload video", err)
+		return
+	}
+	defer fastUploadFile.Close()
+
+	aspectRatio, err := getVideoAspectRatio(fastUploadFile.Name())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Unable to upload video", err)
 		return
@@ -114,7 +128,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	_, err = cfg.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
 		Key:         &key,
-		Body:        uploadFile,
+		Body:        fastUploadFile,
 		ContentType: &contentType,
 	})
 	if err != nil {
