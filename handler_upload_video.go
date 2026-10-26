@@ -91,14 +91,30 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	aspectRatio, err := getVideoAspectRatio(uploadFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to upload video", err)
+		return
+	}
+
+	var portraitMode string
+	switch aspectRatio {
+	case "16:9":
+		portraitMode = "landscape"
+	case "9:16":
+		portraitMode = "portrait"
+	default:
+		portraitMode = "other"
+	}
+
 	keyBytes := make([]byte, 32)
 	rand.Read(keyBytes)
-	key := base64.RawURLEncoding.EncodeToString(keyBytes) + ".mp4"
+	key := fmt.Sprintf("%s/%s.mp4", portraitMode, base64.RawURLEncoding.EncodeToString(keyBytes))
 
 	_, err = cfg.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
 		Key:         &key,
-		Body: uploadFile,
+		Body:        uploadFile,
 		ContentType: &contentType,
 	})
 	if err != nil {
