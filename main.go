@@ -66,7 +66,7 @@ func main() {
 	}
 
 	s3Region := os.Getenv("S3_REGION")
-	if s3Region == "" {
+if s3Region == "" {
 		log.Fatal("S3_REGION environment variable is not set")
 	}
 
